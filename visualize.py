@@ -3,40 +3,43 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 #connections = pandas.read_csv("C:\\TMP\\KSA_Verbindungen.csv", header=None, dtype=str)
-connections = pandas.read_excel("C:\\TMP\\KSA_Verbindungen.xlsx", sheetname='Sheet1')
-connections.columns = ["conn-id", "Switch1", "Verbindung", "Switch2", "Switch2-Port", "Panel", "Panel-Port", "SFP", "Laenge-Patch1", "Laenge-Patch2", "Field0"]
+excel = pandas.read_excel("C:\\TMP\\KSA_Verbindungen.xlsx", sheetname='Sheet1')
+excel.columns = ["conn-id", "Switch1", "Verbindung", "Switch2", "Switch2-Port", "Panel", "Panel-Port", "SFP", "Laenge-Patch1", "Laenge-Patch2", "Field0"]
 
 # Initialize the weights dictionary.
 weights = {}
 # Keep track of keys that have been added once -- we only want edges with a weight of more than 1 to keep our network size manageable.
-added_keys = []
+connections = []
 # Iterate through each route.
-for name, row in connections.iterrows():
+count = 0
+for name, row in excel.iterrows():
     # Extract the source and dest airport ids.
     source = row["Switch2"]
     dest = row["Switch1"]
     # Create a key for the weights dictionary.
     # This corresponds to one edge, and has the start and end of the route.
-    key = "{0}_{1}".format(source, dest)
+    connection = "{0}_{1}".format(source, dest)
     # If the key is already in weights, increment the weight.
-    if key in weights:
-        weights[key] += 1
+    if connection in connections:
+        weights[connection] += 1
     # If the key is in added keys, initialize the key in the weights dictionary, with a weight of 2.
-    elif key in added_keys:
-        weights[key] = 2
+    #elif connection in connections:
+    #    weights[connection] = 1
     # If the key isn't in added_keys yet, append it.
     # This ensures that we aren't adding edges with a weight of 1.
     else:
-        added_keys.append(key)
+        connections.append(connection)
+        weights[connection] = 1
 
 graph = nx.Graph()
 # Keep track of added nodes in this set so we don't add twice.
 nodes = set()
 # Iterate through each edge.
-for k, weight in weights.items():
+#for k, weight in weights.items():
+for connection in connections:
     try:
         # Split the source and dest ids and convert to integers.
-        source, dest = k.split("_")
+        source, dest = connection.split("_")
         #source, dest = [int(source), int(dest)]
         # Add the source if it isn't in the nodes.
         if source not in nodes:
@@ -50,7 +53,7 @@ for k, weight in weights.items():
         nodes.add(dest)
 
         # Add the edge to the graph.
-        graph.add_edge(source, dest, weight=weight)
+        graph.add_edge(source, dest, weight=weights[connection])
     except (ValueError, IndexError):
         pass
 
